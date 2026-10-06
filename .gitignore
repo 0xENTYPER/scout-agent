@@ -1,7 +1,0 @@
-.DS_Store
-*.log
-.env*
-.data/
-dist/
-node_modules/
-__pycache__/

@@ -1,165 +1,83 @@
-# Scout Agent
+# Scout
 
-> Verify, repair, and prove local web-app behavior with bounded AI authority.
+> Local QA that turns a bug report into a repeatable check and a verified repair candidate.
 
 ![Scout local QA workspace](assets/product.png)
 
-Scout turns a vague bug report into a repeatable local workflow: define explicit checks, collect technical evidence, prepare a supported repair in an isolated candidate copy, and rerun the same scenario. It is designed around a simple rule: an AI repair is not useful until the product can show exactly what was observed, changed, and proved.
+Scout is a product I am currently building. It helps small teams reproduce broken web flows, keep the evidence, and review a narrowly scoped repair without giving an agent unlimited access to the project.
 
-This repository documents the product and architecture. The complete local application and production controls remain private.
+- **Status:** active development
+- **Product:** private local application
+- **Repository:** public product showcase, no source code
 
-## Product problem
+## The problem
 
-Small teams frequently lose the connection between a report, the observed failure, the attempted change, and the final verification. General-purpose coding agents can make that worse by changing too much or acting with unclear authority.
+A bug report, the observed failure, the attempted fix, and the final verification often live in different places. By the time a developer opens the issue, important context is already missing.
 
-Scout narrows the operation:
+Scout keeps that path together.
 
-```text
-one local project
-+ one declared user outcome
-+ explicit checks
-+ one bounded candidate repair
-+ the same checks again
-= reviewable evidence
-```
+## How it works
 
-## Execution model
+**Define → run → inspect → prepare candidate → rerun**
 
-```mermaid
-flowchart LR
-    A[Expected outcome] --> B[Explicit checks]
-    B --> C[Local runner]
-    C --> D[Before evidence]
-    D -->|supported failure| E[Candidate copy]
-    E --> F[Bounded repair]
-    F --> G[Temporary local server]
-    G --> H[Repeat checks]
-    H --> I[Patch + after evidence]
-```
+1. Select a local project and describe the expected result.
+2. Add explicit browser, HTTP, or file checks.
+3. Run the scenario and preserve the failure evidence.
+4. Prepare one bounded repair in an isolated copy.
+5. Run the same scenario again and compare the result.
 
-Supported browser actions deliberately use a small grammar:
+## Product surface
 
-```json
-{
-  "kind": "browser",
-  "name": "Creating a task works",
-  "path": "/",
-  "steps": [
-    { "action": "fill", "selector": "#new-task", "value": "Ship evidence" },
-    { "action": "press", "selector": "#new-task", "value": "Enter" },
-    { "action": "expect_text", "selector": "main", "value": "Ship evidence" }
-  ]
-}
-```
+The interface keeps four things visible at the same time:
 
-## Safety is part of the product
+- the user outcome being tested;
+- the checks that define success;
+- the evidence collected during the run;
+- the exact authority Scout has for the next action.
 
-| Boundary | Product behavior |
+The goal is not to make the agent feel autonomous. The goal is to make the work understandable.
+
+## Safety boundaries
+
+| Boundary | What it means |
 | --- | --- |
-| Localhost only | Browser automation accepts only `127.0.0.1` and `localhost`. |
-| Original stays untouched | A repair is written into an isolated candidate copy. |
-| Hash before change | The observed source must still match before a replacement is prepared. |
-| One unique replacement | Ambiguous or broad text edits are rejected. |
-| Public files only | Hidden paths, symbolic links, credential-like files, and sensitive selectors are blocked. |
-| Repeat verification | The same scenario runs against the candidate before success is shown. |
-| No hidden spend | Planning is free and optional inference has visible local limits. |
-| No silent upload | Evidence and support bundles stay local unless the user explicitly shares them. |
+| Localhost only | Browser checks stay inside the local development environment. |
+| Original stays untouched | Repairs are prepared in an isolated candidate copy. |
+| One bounded change | Broad or ambiguous edits are rejected. |
+| Evidence before success | A repair counts only after the original scenario passes. |
+| Visible approval | The user decides whether a candidate moves any further. |
+| Local by default | Project data and evidence are not silently uploaded. |
 
-## Architecture
+## Why the UI is quiet
 
-```text
-local workspace UI
-    | scenario and policy
-application service
-    | SQLite state + operation lock
-check runner
-    | browser / HTTP / file adapters
-candidate repair pipeline
-    | copy -> validate -> replace -> serve -> retest
-evidence and report store
-```
+QA tools tend to surface every log at once. Scout starts with the decision the user needs to make: did the workflow fail, what evidence supports that result, and is a repair candidate safe to review?
 
-The application is intentionally dependency-light:
+Technical detail remains available, but it does not compete with the current state or next action.
 
-- Python owns the local service, storage, runner, and evidence lifecycle.
-- Playwright handles the bounded browser-action grammar.
-- SQLite records runs, policies, budgets, and repeatable state.
-- Optional Ollama keeps inference local.
-- Optional user-funded inference is constrained by per-call and monthly limits.
+## What works today
 
-## Repair contract
+- repeatable browser, HTTP, and file checks;
+- saved run history and evidence;
+- isolated repair candidates;
+- before-and-after verification;
+- local inference support;
+- explicit limits around repair scope and model usage.
 
-The AI does not receive authority to edit arbitrary code. It proposes one small replacement:
+Scout has also been tested against an independent TodoMVC-style application: it detected a broken Enter-key flow, prepared an isolated correction, and passed the same browser scenario after the change.
 
-```ts
-type RepairProposal = {
-  file: string;
-  find: string;
-  replace: string;
-  explanation: string;
-  applied: false;
-};
-```
+## Next
 
-The product then verifies path policy, source hash, target uniqueness, size, sensitivity, candidate-copy limits, and repeat-test behavior. This public type mirrors the production boundary without exposing the repair engine.
-
-## Evidence lifecycle
-
-Each run can preserve:
-
-- scenario definition;
-- timestamps and runner status;
-- before and after assertions;
-- browser screenshots;
-- HTTP responses and selected JSON evidence;
-- candidate path and patch;
-- the exact failure that allowed repair preparation;
-- the final rerun result.
-
-A support bundle is intentionally smaller: it excludes source files, screenshots, prompts, credentials, keys, and absolute paths.
-
-## Verification
-
-The private product test suite covers:
-
-- browser and file runner behavior;
-- application policy and operation locking;
-- candidate-copy and replacement controls;
-- budget and reserve behavior;
-- treasury decisions;
-- report and support-bundle redaction.
-
-The system has been exercised against an independent TodoMVC-style project: it detected a broken Enter-key flow, prepared an isolated exact replacement, started the candidate on a temporary port, and passed the original browser scenario after repair.
-
-## SaaS direction
-
-The strongest hosted version is not an autonomous code editor. It is a team verification product:
-
-- shared run history;
-- CI-triggered scenarios;
-- policy templates;
-- reviewable candidate patches;
-- organization-level evidence retention;
-- metered private inference;
-- explicit approval before a repair reaches a repository.
+- clearer comparison between failed and repaired runs;
+- reusable check templates;
+- review links for teams;
+- CI-triggered verification;
+- shared policies and approval roles.
 
 ## Public scope
 
-Included here:
+This repository contains the real product screenshot and a description of the workflow, interface, and product boundaries.
 
-- real working-product screenshot;
-- system workflow and architecture;
-- safety model;
-- representative public contracts;
-- product and SaaS direction.
-
-Not included:
-
-- complete local application source;
-- repair implementation;
-- production configuration;
-- private test fixtures or run data;
-- credentials and inference keys.
+The application source, repair engine, private test data, production configuration, and credentials remain private.
 
 ---
 

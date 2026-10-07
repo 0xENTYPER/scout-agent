@@ -37,6 +37,18 @@ The interface keeps four things visible at the same time:
 
 The goal is not to make the agent feel autonomous. The goal is to make the work understandable.
 
+### Local intelligence controls
+
+Scout can use a free local Ollama model or a user-funded Orbio route. Model selection, per-suggestion limits, and monthly limits stay visible before a repair is requested.
+
+![Scout AI provider and cost controls](assets/ai-settings.png)
+
+### Run history and operating evidence
+
+Previous checks remain attached to their scenario and result. This gives the operator a compact record of what was tested without turning the interface into a wall of logs.
+
+![Scout previous checks and safety controls](assets/run-history.png)
+
 ## Safety boundaries
 
 | Boundary | What it means |
@@ -78,6 +90,13 @@ Scout has also been tested against an independent TodoMVC-style application: it 
 This repository contains the real product screenshot and a description of the workflow, interface, and product boundaries.
 
 The application source, repair engine, private test data, production configuration, and credentials remain private.
+
+<details>
+<summary>View the complete Scout workspace</summary>
+
+![Complete Scout workspace](assets/workspace-full.png)
+
+</details>
 
 ---
 
